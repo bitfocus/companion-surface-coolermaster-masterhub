@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 
-import type { Device, HIDAsync } from 'node-hid'
+import type { Device } from 'node-hid'
 
 import type { HidIdentity } from './discover.js'
 import { matchingDevices } from './discover.js'
@@ -34,22 +34,8 @@ export function listPids(): number[] {
 	return listHid().map((device) => device.productId)
 }
 
-/**
- * `readStart`/`readStop` live on the native handle: `node-hid` only republishes the methods that
- * existed when it wrote its wrapper, so the typed `HIDAsync` does not carry them.
- */
-interface NativeHid extends HIDAsync {
-	readStart(onReport: (error: Error | null, data?: Buffer) => void): Promise<void>
-	readStop(): Promise<void>
-}
-
-interface AsyncHid extends HIDAsync {
-	_raw: NativeHid
-}
-
 export async function openHid(path: string): Promise<HidPort> {
-	const device = (await loadHid().HIDAsync.open(path)) as unknown as AsyncHid
-	const native = device._raw
+	const device = await loadHid().HIDAsync.open(path)
 	return {
 		async write(data: Uint8Array): Promise<void> {
 			await device.write(Buffer.from(data))
@@ -58,15 +44,24 @@ export async function openHid(path: string): Promise<HidPort> {
 			await device.sendFeatureReport(Buffer.from(data))
 		},
 		/**
-		 * `node-hid` keeps one long-lived reader thread per module. It is what makes writes fast:
-		 * the thread sits in `hid_read_timeout`, off libuv's pool, where a one-shot read would
-		 * hold a pool thread for its whole timeout and delay every write behind it.
+		 * A `data` listener is the public way to start `node-hid`'s reader thread. `resume`
+		 * calls the native `readStart`, which blocks in `hid_read_timeout` on that thread,
+		 * off libuv's pool. A one-shot `read` would hold a pool thread for its whole timeout
+		 * and delay every write behind it. `readStart` itself is not on the public handle.
 		 */
 		async readStart(onReport: (report: Uint8Array) => void): Promise<void> {
-			await native.readStart((error, data) => {
-				if (!error && data && data.length > 0) {
+			device.on('data', (data: Buffer | undefined) => {
+				if (data && data.length > 0) {
 					onReport(new Uint8Array(data))
 				}
+			})
+			// An `error` with no listener is thrown by EventEmitter. A failed read is not a
+			// report; an unplug shows up as a failed write or a device missing from the watch.
+			device.on('error', () => undefined)
+			// `on('data')` starts the thread on the next tick, via `resume`. Wait for that
+			// tick so the caller can write knowing the reader is already running.
+			await new Promise<void>((resolve) => {
+				process.nextTick(resolve)
 			})
 		},
 		async close(): Promise<void> {
