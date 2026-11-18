@@ -93,7 +93,7 @@ export class MasterHubUsbSurface implements SurfaceInstance {
 				this.sendJpeg(control, encoded)
 			}
 		}
-		if (drawProps.color) {
+		if (drawProps.color && stylePreset(control) === 'led') {
 			const color = parseHexColor(drawProps.color)
 			if (color) {
 				this.link.setColor(control.id, color)
@@ -171,7 +171,7 @@ export function registerProps(grid: SurfaceGrid): SurfaceRegisterProps {
 			stylePresets: {
 				default: {},
 				key: { bitmap: { w: KEY_SIZE, h: KEY_SIZE, format: 'rgb' } },
-				dial: { bitmap: { w: DIAL_SIZE, h: DIAL_SIZE, format: 'rgb' }, colors: 'hex' },
+				dial: { bitmap: { w: DIAL_SIZE, h: DIAL_SIZE, format: 'rgb' } },
 				encoder: {},
 				led: { colors: 'hex' },
 			},
