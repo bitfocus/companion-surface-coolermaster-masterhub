@@ -208,19 +208,22 @@ export class UsbLink {
 	/**
 	 * Drains every queued report back to back, then parks until another is queued. Writes go
 	 * through libuv's pool, so they need no coordination with input: see {@link start}.
+	 * A failed write means this port is gone. It is closed and cleared so {@link refreshModules}
+	 * can reopen it; an unexpected error still fails the whole surface.
 	 */
 	private async writeLoop(module: OpenModule): Promise<void> {
 		try {
 			while (!this.stopping) {
-				const output = this.nextOutput(module.productId)
 				const port = module.port
-				if (!output || !port) {
+				if (!port) {
 					module.writing = false
-					if (!port) {
-						await delay(WATCH_MS)
-					} else {
-						await this.idle(module)
-					}
+					await delay(WATCH_MS)
+					continue
+				}
+				const output = this.nextOutput(module.productId)
+				if (!output) {
+					module.writing = false
+					await this.idle(module)
 					continue
 				}
 				module.writing = true
@@ -233,7 +236,16 @@ export class UsbLink {
 					}
 				} catch (error) {
 					count('write errors')
-					throw error
+					// Unplug fails the in-flight write immediately. watch() can take up to WATCH_MS
+					// to notice, so recover this module here instead of dropping the surface.
+					if (this.stopping) {
+						break
+					}
+					console.log(
+						`[MasterHub] pid ${module.productId}: write failed: ${error instanceof Error ? error.message : String(error)}`,
+					)
+					await this.retirePort(module, port)
+					continue
 				}
 				count('flush reports')
 				time('flush ms', startedAt, 20)
@@ -246,6 +258,14 @@ export class UsbLink {
 				this.fail(error)
 			}
 		}
+	}
+
+	/** Closes `port` and, if the module still has it, leaves a null port for {@link refreshModules}. */
+	private async retirePort(module: OpenModule, port: HidPort): Promise<void> {
+		if (module.port === port) {
+			module.port = null
+		}
+		await port.close().catch(() => undefined)
 	}
 
 	/** Opens the module's port, starts its input, and enables it where the firmware needs it. */
@@ -452,22 +472,16 @@ export class UsbLink {
 		}
 		for (const module of this.modules) {
 			const device = present.find((item) => item.productId === module.productId)
-			if (!device && module.port) {
+			if (!device) {
 				const port = module.port
-				module.port = null
-				await port.close().catch(() => undefined)
-				if (module.productId === PID_KEYS) {
-					this.keyState.fill(false)
+				if (port) {
+					await this.retirePort(module, port)
 				}
-				if (module.productId === PID_KNOB) {
-					this.knobPressed.fill(false)
-				}
-				if (module.productId === PID_DIAL) {
-					this.dialPressed = false
-				}
+				// A write error may already have cleared the port, before this watch saw the unplug.
+				this.clearHeldInput(module.productId)
 				continue
 			}
-			if (device && !module.port) {
+			if (!module.port) {
 				module.path = device.path
 				try {
 					await this.startModule(module)
@@ -482,21 +496,32 @@ export class UsbLink {
 		}
 	}
 
+	/** Drops held presses so a module that comes back does not miss the next edge. */
+	private clearHeldInput(productId: number): void {
+		if (productId === PID_KEYS) {
+			this.keyState.fill(false)
+		}
+		if (productId === PID_KNOB) {
+			this.knobPressed.fill(false)
+		}
+		if (productId === PID_DIAL) {
+			this.dialPressed = false
+		}
+	}
+
 	/** Queues the current frame or colour again, so a module that was reopened is not left blank. */
 	private repaint(productId: number): void {
 		if (productId === PID_KEYS) {
 			this.backlight.restore()
 			for (const [control, jpeg] of this.keys.snapshot()) {
-				this.keys.store(control, jpeg)
+				// A distinct copy restarts the transfer at the first chunk.
+				this.keys.store(control, new Uint8Array(jpeg))
 			}
 			this.wake(productId)
 			return
 		}
 		if (productId === PID_DIAL) {
-			const jpeg = this.screen.shownFrame()
-			if (jpeg) {
-				this.screen.store(jpeg)
-			}
+			this.screen.replay()
 			this.wake(productId)
 			return
 		}

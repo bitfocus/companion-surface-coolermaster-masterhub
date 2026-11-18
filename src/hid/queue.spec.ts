@@ -5,6 +5,15 @@ import { LED_KNOB } from './m0.js'
 import { KeyImageQueue, LedQueue, ScreenQueue } from './queue.js'
 
 void describe('output queues', () => {
+	void it('remembers a key frame after its last chunk is taken', () => {
+		const queue = new KeyImageQueue()
+		const jpeg = Uint8Array.from([1, 2, 3])
+		queue.store(2, jpeg)
+		assert.equal(queue.nextChunk()?.[6], 2)
+		assert.equal(queue.nextChunk(), null)
+		assert.deepEqual(queue.snapshot(), [[2, jpeg]])
+	})
+
 	void it('writes one key chunk and replaces the active JPEG', () => {
 		const queue = new KeyImageQueue()
 		const first = Uint8Array.from({ length: 313 }, (_, index) => index & 0xff)
@@ -18,6 +27,17 @@ void describe('output queues', () => {
 		assert.equal(next?.[7], 1)
 		assert.equal(next?.[8], 1)
 		assert.equal(queue.nextChunk(), null)
+	})
+
+	void it('resends the dial frame from the first chunk after the port is reopened', () => {
+		const queue = new ScreenQueue()
+		const frame = Uint8Array.from({ length: 313 }, () => 9)
+		queue.store(frame)
+		assert.equal(queue.nextChunk()?.[2], 0)
+		queue.replay()
+		const again = queue.nextChunk()
+		assert.equal(again?.[2], 0)
+		assert.equal(again?.[8], 9)
 	})
 
 	void it('keeps the newest dial frame until the current transfer finishes', () => {

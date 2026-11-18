@@ -21,8 +21,15 @@ class FakePort implements HidPort {
 	closed = false
 	private deliver: ((report: Uint8Array) => void) | null = null
 
+	/** When set, the next `write` rejects once, as an unplug does to an in-flight report. */
+	throwOnWrite = false
+
 	/** A real `node-hid` write hops to libuv's shared thread pool and back. */
 	async write(data: Uint8Array): Promise<void> {
+		if (this.throwOnWrite) {
+			this.throwOnWrite = false
+			throw new Error('device disconnected')
+		}
 		this.writes.push(data)
 		await new Promise<void>((resolve) => setTimeout(resolve, 5))
 	}
@@ -262,4 +269,53 @@ void describe('UsbLink output loop', () => {
 			}
 		},
 	)
+
+	void it('a write error drops only that module so it can be reopened', { timeout: 8000 }, async () => {
+		const keyIdentity: HidIdentity = { vendorId: VID, productId: PID_KEYS, path: '/dev/fake-keys' }
+		const knobIdentity: HidIdentity = { vendorId: VID, productId: PID_KNOB, path: '/dev/fake-knob' }
+		const devices = new Devices([keyIdentity, knobIdentity])
+		const link = new UsbLink(devices.opener(), () => devices.list())
+		let lost: Error | null = null
+		link.setHandlers(
+			() => undefined,
+			(error) => {
+				lost = error
+			},
+		)
+		await link.open([keyIdentity, knobIdentity])
+		await link.start()
+		const [keyPort, knobPort] = devices.ports
+		assert.ok(keyPort && knobPort)
+
+		try {
+			// The keypad write fails while the knob is still plugged in. The surface stays up.
+			keyPort.throwOnWrite = true
+			link.setKeyImage(3, new Uint8Array(700).fill(7))
+			await waitFor('key port closed after write error', () => keyPort.closed, 1000)
+			assert.equal(lost, null)
+			assert.equal(knobPort.closed, false)
+
+			link.setColor('knob/0', { r: 9, g: 8, b: 7 })
+			await waitFor('knob still writing', () => knobPort.writes.length >= 2, 1000)
+			assert.equal(lost, null)
+			assert.equal(knobPort.closed, false)
+
+			// The keypad is still listed, so the watch reopens it and the same loop writes again.
+			await waitFor('keypad reopened', () => devices.ports.length === 3, 3000)
+			const reopened = devices.ports[2]
+			assert.ok(reopened)
+			await waitFor(
+				'keypad image restarted',
+				() =>
+					reopened.starts === 1 &&
+					reopened.writes.some((report) => report[1] === 0x36 && report[2] === 0 && report[6] === 3),
+				3000,
+			)
+			assert.equal(lost, null)
+			assert.equal(keyPort.closed, true)
+			assert.equal(knobPort.closed, false)
+		} finally {
+			await link.close()
+		}
+	})
 })
