@@ -4,6 +4,8 @@ import { encodeLed, LED_MODE_STATIC, type LedCommand } from './m0.js'
 
 export class KeyImageQueue {
 	private readonly pending = new Map<number, Uint8Array>()
+	/** Kept after the last chunk is taken, so a failed write can be sent again. */
+	private readonly shown = new Map<number, Uint8Array>()
 	private active: { control: number; jpeg: Uint8Array; reports: Uint8Array[]; next: number } | null = null
 
 	/** Replaces any JPEG that has not started transferring yet. */
@@ -13,12 +15,15 @@ export class KeyImageQueue {
 
 	/** The frame each key last showed, including one still transferring. */
 	snapshot(): Array<[number, Uint8Array]> {
-		const frames = [...this.pending.entries()]
+		const frames = new Map(this.shown)
 		const active = this.active
-		if (active && !this.pending.has(active.control)) {
-			frames.push([active.control, active.jpeg])
+		if (active) {
+			frames.set(active.control, active.jpeg)
 		}
-		return frames
+		for (const [control, jpeg] of this.pending) {
+			frames.set(control, jpeg)
+		}
+		return [...frames]
 	}
 
 	/** One output report. A newer JPEG for the active key replaces the transfer. */
@@ -40,6 +45,7 @@ export class KeyImageQueue {
 			if (reports.length === 0) {
 				return this.nextChunk()
 			}
+			this.shown.set(control, jpeg)
 			this.active = { control, jpeg, reports, next: 0 }
 		}
 		const chunk = this.active.reports[this.active.next]
@@ -63,6 +69,14 @@ export class ScreenQueue {
 	/** The frame the dial last showed, or is about to show. */
 	shownFrame(): Uint8Array | null {
 		return this.pending ?? this.shown
+	}
+
+	/** Drops a half-sent frame and queues the current JPEG from the first chunk. */
+	replay(): void {
+		const jpeg = this.shownFrame()
+		this.active = null
+		this.shown = null
+		this.pending = jpeg
 	}
 
 	/** Finishes the current frame, then starts the newest JPEG when it differs. */
