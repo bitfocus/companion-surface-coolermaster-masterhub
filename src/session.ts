@@ -425,7 +425,7 @@ export class UsbLink {
 			this.emit({
 				action: 'knob_rotated',
 				payload: {
-					module: { model: 'M0064', id: 'base' },
+					module: { model: '1xDial', id: 'dial' },
 					control: 0,
 					direction: input.clockwise ? 'cw' : 'ccw',
 				},
@@ -436,7 +436,7 @@ export class UsbLink {
 			this.dialPressed = input.pressed
 			this.emit({
 				action: 'knob_state',
-				payload: { module: { model: 'M0064', id: 'base' }, control: 0, pressed: input.pressed },
+				payload: { module: { model: '1xDial', id: 'dial' }, control: 0, pressed: input.pressed },
 			})
 		}
 	}

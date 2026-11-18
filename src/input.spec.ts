@@ -29,7 +29,7 @@ void test('keys, knobs, the dial, and rollers become presses and detents', () =>
 	)
 	assert.deepEqual(
 		mapDaemonEvent(
-			event('knob_rotated', { module: { model: 'M0064', id: 'base' }, control: 0, direction: 'cw' }),
+			event('knob_rotated', { module: { model: '1xDial', id: 'dial' }, control: 0, direction: 'cw' }),
 			sliders,
 			controls,
 		),
