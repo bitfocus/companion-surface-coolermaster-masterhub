@@ -25,7 +25,7 @@ Quit OpenDeck and Cooler Master software first. The module opens the device excl
 - **Rollers** are encoder controls with no screen and no LED. A button on that cell does not set a color.
 - **Brightness** in Companion's surface settings drives the keypad backlight and the knob, slider, and base LEDs together.
 - **Sliders** send a position from 0 to 100. In the surface settings, choose the variable each slider stores that position in. Slider movement is sent as encoder turns; the first reading after connecting only stores the position, so connecting does not turn the encoder.
-- **Pincode entry** on a locked Companion uses the first ten keys of the keypad as digits 0–9. While locked, keys and the dial are blanked and the knob, slider, and base LEDs are turned off.
+- **Pincode entry** on a locked Companion uses the keypad. The first key shows one mark per stored digit, and the marks clear when the entry resets. The digits are `· 1 2 3 ·` / `· 4 5 6 ·` / `0 7 8 9 ·`. The other keys and the dial are blanked, and the knob, slider, and base LEDs are turned off.
 
 ## Layout
 

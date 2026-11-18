@@ -39,4 +39,12 @@ Use the variable you chose in triggers and feedbacks.
 
 ### Keyboard lock
 
-When Companion's surface is locked, the keypad's first ten keys type the PIN digits 0–9. Keys and the dial are blanked, and the knob, slider, and base LEDs are turned off, until you unlock, so they do not show the buttons underneath.
+When Companion's surface is locked, the keypad enters the PIN. The first key shows one mark for each digit stored so far, and those marks disappear when the entry resets. The digits are arranged like this, and the other keys stay blank:
+
+```
+· 1 2 3 ·
+· 4 5 6 ·
+0 7 8 9 ·
+```
+
+The dial is blanked, and the knob, slider, and base LEDs are turned off, until you unlock.

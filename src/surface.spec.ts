@@ -44,6 +44,31 @@ void describe('MasterHub surface', () => {
 		assert.equal(controls?.['roller/0']?.stylePreset, 'encoder')
 	})
 
+	void it('lays the PIN out as a phone pad and shows the stored digits on the first key', () => {
+		const keypad = usbGrid(['M4315', '1xDial'])
+		assert.ok(keypad)
+		const map = registerProps(keypad).pincodeMap
+		assert.ok(map && map.type === 'single-page')
+		assert.deepEqual(map, {
+			type: 'single-page',
+			pincode: 'key/0',
+			0: 'key/10',
+			1: 'key/1',
+			2: 'key/2',
+			3: 'key/3',
+			4: 'key/6',
+			5: 'key/7',
+			6: 'key/8',
+			7: 'key/11',
+			8: 'key/12',
+			9: 'key/13',
+		})
+
+		const base = usbGrid(['M0064'])
+		assert.ok(base)
+		assert.equal(registerProps(base).pincodeMap, null)
+	})
+
 	void it('blanks when the surface locks and leaves it alone when it unlocks', async () => {
 		const { surface, images, colors } = surfaceWithEveryModule()
 		surface.showLockedStatus(true, 0)
