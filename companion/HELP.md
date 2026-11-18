@@ -35,4 +35,4 @@ The value runs from 0 to 100.
 
 ### Keyboard lock
 
-When Companion's surface is locked, the keypad's first ten keys type the PIN digits 0–9 and the keys and dial are blanked until you unlock, so they do not show the buttons underneath.
+When Companion's surface is locked, the keypad's first ten keys type the PIN digits 0–9. Keys and the dial are blanked, and the knob, slider, and base LEDs are turned off, until you unlock, so they do not show the buttons underneath.

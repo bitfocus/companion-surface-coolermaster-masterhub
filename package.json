@@ -11,7 +11,7 @@
 		"dev": "node scripts/dev-build.mjs --watch",
 		"lint:raw": "eslint",
 		"lint": "run lint:raw .",
-		"test": "node --experimental-strip-types --import ./test-register.mjs --test src/hid/codec.spec.ts src/hid/queue.spec.ts src/discover.spec.ts src/grid.spec.ts src/jpeg.spec.ts src/jpeg-encoder.spec.ts src/session.spec.ts"
+		"test": "node --experimental-strip-types --import ./test-register.mjs --test src/hid/codec.spec.ts src/hid/queue.spec.ts src/discover.spec.ts src/grid.spec.ts src/jpeg.spec.ts src/jpeg-encoder.spec.ts src/session.spec.ts src/surface.spec.ts"
 	},
 	"license": "MIT",
 	"repository": {
