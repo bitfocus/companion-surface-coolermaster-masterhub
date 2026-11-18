@@ -39,6 +39,8 @@ interface OpenModule {
 	path: string
 	/** Set while this module has reports to write. */
 	writing: boolean
+	/** Resolves the write loop while it is parked with nothing queued. */
+	resolveIdle: (() => void) | null
 }
 
 async function delay(ms: number): Promise<void> {
@@ -89,6 +91,7 @@ export class UsbLink {
 					path: device.path,
 					port: await this.opener.open(device.path),
 					writing: false,
+					resolveIdle: null,
 				}
 				opened.push(module)
 			}
@@ -127,6 +130,9 @@ export class UsbLink {
 		}
 		this.stopping = true
 		this.closed = true
+		for (const module of this.modules) {
+			this.wake(module.productId)
+		}
 		if (this.timer) {
 			clearInterval(this.timer)
 			this.timer = null
@@ -138,15 +144,19 @@ export class UsbLink {
 		const brightness = Math.min(100, Math.max(0, Math.round(percent)))
 		if (this.has(PID_KEYS)) {
 			this.backlight.store(brightness)
+			this.wake(PID_KEYS)
 		}
 		if (this.has(PID_KNOB)) {
 			this.knobLeds.setBrightness(LED_INDEX_ALL, brightness)
+			this.wake(PID_KNOB)
 		}
 		if (this.has(PID_SLIDER)) {
 			this.sliderLeds.setBrightness(LED_INDEX_ALL, brightness)
+			this.wake(PID_SLIDER)
 		}
 		if (this.has(PID_BASE)) {
 			this.baseLeds.setBrightness(0, brightness)
+			this.wake(PID_BASE)
 		}
 	}
 
@@ -156,6 +166,7 @@ export class UsbLink {
 		}
 		count('jpeg chunks', chunkCount(jpeg))
 		this.keys.store(control, jpeg)
+		this.wake(PID_KEYS)
 	}
 
 	setDialImage(jpeg: Uint8Array): void {
@@ -164,6 +175,7 @@ export class UsbLink {
 		}
 		count('jpeg chunks', chunkCount(jpeg))
 		this.screen.store(jpeg)
+		this.wake(PID_DIAL)
 	}
 
 	setColor(controlId: string, color: { r: number; g: number; b: number }): void {
@@ -171,6 +183,7 @@ export class UsbLink {
 			const control = Number(controlId.slice('knob/'.length))
 			if (control >= 0 && control <= 2) {
 				this.knobLeds.setStaticColor(knobLedIndex(control), color)
+				this.wake(PID_KNOB)
 			}
 			return
 		}
@@ -178,11 +191,13 @@ export class UsbLink {
 			const control = Number(controlId.slice('slider/'.length))
 			if (control >= 0 && control <= 4) {
 				this.sliderLeds.setStaticColor(control, color)
+				this.wake(PID_SLIDER)
 			}
 			return
 		}
 		if ((controlId === 'dial' || controlId === 'base') && this.has(PID_BASE)) {
 			this.baseLeds.setStaticColor(0, color)
+			this.wake(PID_BASE)
 		}
 	}
 
@@ -191,7 +206,7 @@ export class UsbLink {
 	}
 
 	/**
-	 * Drains every queued report back to back, then yields when the queue is empty. Writes go
+	 * Drains every queued report back to back, then parks until another is queued. Writes go
 	 * through libuv's pool, so they need no coordination with input: see {@link start}.
 	 */
 	private async writeLoop(module: OpenModule): Promise<void> {
@@ -204,7 +219,7 @@ export class UsbLink {
 					if (!port) {
 						await delay(WATCH_MS)
 					} else {
-						await this.idle()
+						await this.idle(module)
 					}
 					continue
 				}
@@ -246,9 +261,25 @@ export class UsbLink {
 		}
 	}
 
-	/** Yields to the event loop while there is nothing to write, so the loop cannot spin. */
-	private async idle(): Promise<void> {
-		await new Promise<void>((resolve) => setImmediate(resolve))
+	/**
+	 * Parks until {@link wake}. The resolver is installed before this yields, and a report queued
+	 * while the loop is writing stays in the queue until the next drain, so nothing is missed.
+	 */
+	private async idle(module: OpenModule): Promise<void> {
+		await new Promise<void>((resolve) => {
+			module.resolveIdle = resolve
+		})
+	}
+
+	/** Resolves the parked write loop for a module that just had a report queued. */
+	private wake(productId: number): void {
+		const module = this.modules.find((item) => item.productId === productId)
+		const resolveIdle = module?.resolveIdle
+		if (!module || !resolveIdle) {
+			return
+		}
+		module.resolveIdle = null
+		resolveIdle()
 	}
 
 	private nextOutput(productId: number): { feature: boolean; bytes: Uint8Array } | null {
@@ -458,6 +489,7 @@ export class UsbLink {
 			for (const [control, jpeg] of this.keys.snapshot()) {
 				this.keys.store(control, jpeg)
 			}
+			this.wake(productId)
 			return
 		}
 		if (productId === PID_DIAL) {
@@ -465,6 +497,7 @@ export class UsbLink {
 			if (jpeg) {
 				this.screen.store(jpeg)
 			}
+			this.wake(productId)
 			return
 		}
 		if (productId === PID_KNOB) {
@@ -476,6 +509,7 @@ export class UsbLink {
 		if (productId === PID_BASE) {
 			this.baseLeds.restore()
 		}
+		this.wake(productId)
 	}
 
 	private fail(error: unknown): void {
