@@ -23,15 +23,15 @@ Every connected MasterHub module (keypad, sliders, knobs, rollers, dial, base) s
 
 Moving a slider also counts as turning the encoder on its cell, so an encoder button there reacts to slider movement. The first reading after connecting only records the position, so plugging in does not turn the encoder.
 
-Each slider also publishes a variable you can use in triggers and feedbacks:
+Each slider also sends its position, from 0 to 100. In the surface settings, choose the variable that position is stored in:
 
-| Variable               | Slider    |
-| ---------------------- | --------- |
-| `$(internal:slider_1)` | leftmost  |
-| …                      |           |
-| `$(internal:slider_5)` | rightmost |
+| Setting  | Slider    |
+| -------- | --------- |
+| Slider 1 | leftmost  |
+| …        |           |
+| Slider 5 | rightmost |
 
-The value runs from 0 to 100.
+Use the variable you chose in triggers and feedbacks.
 
 ### Keyboard lock
 
