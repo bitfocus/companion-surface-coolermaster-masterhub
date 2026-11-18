@@ -56,10 +56,12 @@ export class MasterHubUsbSurface implements SurfaceInstance {
 	async blank(): Promise<void> {
 		for (const control of this.grid.controls) {
 			const size = bitmapSize(control)
-			if (!size) {
-				continue
+			if (size) {
+				this.sendJpeg(control, blackJpeg(size, size))
 			}
-			this.sendJpeg(control, blackJpeg(size, size))
+			if (control.id === 'base' || control.id.startsWith('knob/') || control.id.startsWith('slider/')) {
+				this.link.setColor(control.id, { r: 0, g: 0, b: 0 })
+			}
 		}
 	}
 
