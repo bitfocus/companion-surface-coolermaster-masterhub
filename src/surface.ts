@@ -30,7 +30,7 @@ export class MasterHubUsbSurface implements SurfaceInstance {
 	private readonly sliders = new SliderMemory()
 	private readonly controlIds: ReadonlySet<string>
 	private readonly encoder = new LatestJpegEncoder()
-	/** Companion reports each entered digit with `locked` still true, and only redraws the digits when the lock starts. */
+	/** Companion reports each entered digit with `locked` still true. The digit count is drawn on the pincode control. */
 	private locked = false
 
 	constructor(surfaceId: string, grid: SurfaceGrid, context: SurfaceContext, link: UsbLink, onClose: () => void) {
@@ -211,17 +211,18 @@ function pincodeMap(grid: SurfaceGrid): SurfacePincodeMap | null {
 	}
 	return {
 		type: 'single-page',
-		pincode: null,
-		0: 'key/0',
+		// Companion draws one mark per stored digit on the first key, and clears them when the entry resets.
+		pincode: 'key/0',
+		0: 'key/10',
 		1: 'key/1',
 		2: 'key/2',
 		3: 'key/3',
-		4: 'key/4',
-		5: 'key/5',
-		6: 'key/6',
-		7: 'key/7',
-		8: 'key/8',
-		9: 'key/9',
+		4: 'key/6',
+		5: 'key/7',
+		6: 'key/8',
+		7: 'key/11',
+		8: 'key/12',
+		9: 'key/13',
 	}
 }
 
