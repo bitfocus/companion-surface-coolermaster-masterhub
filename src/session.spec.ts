@@ -4,7 +4,7 @@ import { describe, it } from 'node:test'
 import type { HidIdentity } from './discover.js'
 import { PID_BASE, PID_DIAL, PID_KEYS, PID_KNOB, PID_ROLLER, PID_SLIDER, VID } from './hid/ids.js'
 import { encodeButtonImage, softwareModeFeature } from './hid/keys.js'
-import { encodeLed, LED_KNOB } from './hid/m0.js'
+import { encodeLed, LED_BASE, LED_KNOB } from './hid/m0.js'
 import type { DaemonEvent } from './input.js'
 import type { HidOpener, HidPort } from './session.js'
 import { UsbLink } from './session.js'
@@ -194,6 +194,39 @@ void describe('UsbLink output loop', () => {
 			// A polling loop would have a setImmediate pending for every module.
 			await new Promise<void>((resolve) => setTimeout(resolve, 50))
 			assert.equal(process.getActiveResourcesInfo().filter((type) => type === 'Immediate').length, 0)
+		} finally {
+			await link.close()
+		}
+	})
+
+	void it('sends a base colour to the base LED and ignores a dial colour', { timeout: 5000 }, async () => {
+		const base: HidIdentity = { vendorId: VID, productId: PID_BASE, path: '/dev/fake-base' }
+		const dial: HidIdentity = { vendorId: VID, productId: PID_DIAL, path: '/dev/fake-dial' }
+		const devices = new Devices([base, dial])
+		const link = new UsbLink(devices.opener(), () => devices.list())
+		link.setHandlers(
+			() => undefined,
+			() => undefined,
+		)
+		await link.open([base, dial])
+		await link.start()
+		const [basePort, dialPort] = devices.ports
+		assert.ok(basePort && dialPort)
+
+		const expected = [
+			encodeLed(LED_BASE, { kind: 'mode', index: 0, mode: 1, save: false }),
+			encodeLed(LED_BASE, { kind: 'color', index: 0, r: 9, g: 8, b: 7, save: false }),
+		]
+		try {
+			link.setColor('dial', { r: 1, g: 2, b: 3 })
+			await new Promise<void>((resolve) => setTimeout(resolve, 50))
+			assert.deepEqual([...basePort.writes], [])
+			assert.deepEqual([...dialPort.writes], [])
+
+			link.setColor('base', { r: 9, g: 8, b: 7 })
+			await waitFor('base LED reports', () => basePort.writes.length >= expected.length, 1000)
+			assert.deepEqual([...basePort.writes], expected)
+			assert.deepEqual([...dialPort.writes], [])
 		} finally {
 			await link.close()
 		}

@@ -195,7 +195,7 @@ export class UsbLink {
 			}
 			return
 		}
-		if ((controlId === 'dial' || controlId === 'base') && this.has(PID_BASE)) {
+		if (controlId === 'base' && this.has(PID_BASE)) {
 			this.baseLeds.setStaticColor(0, color)
 			this.wake(PID_BASE)
 		}
