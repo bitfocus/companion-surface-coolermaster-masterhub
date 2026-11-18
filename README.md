@@ -22,7 +22,7 @@ The plugin opens the MasterHub HID devices itself. Every connected module (keypa
 - **Knobs, sliders, and base** are encoder-style controls without a screen. A button placed on that cell supplies its color as a solid LED color. LED _animations_ (breathing, strobe, rainbow, …) are not supported.
 - **Rollers** are encoder controls with no screen and no LED. A button on that cell does not set a color.
 - **Brightness** in Companion's surface settings drives the keypad backlight and the knob, slider, and base LEDs together.
-- **Sliders** also publish `slider_1` … `slider_5` to Companion as values from 0 to 100. Slider movement is sent as encoder turns; the first reading after connecting only stores the position, so connecting does not turn the encoder.
+- **Sliders** send a position from 0 to 100. In the surface settings, choose the variable each slider stores that position in. Slider movement is sent as encoder turns; the first reading after connecting only stores the position, so connecting does not turn the encoder.
 - **Pincode entry** on a locked Companion uses the first ten keys of the keypad as digits 0–9. While locked, keys and the dial are blanked and the knob, slider, and base LEDs are turned off.
 
 ## Layout
