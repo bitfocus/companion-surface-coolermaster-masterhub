@@ -4,13 +4,14 @@ Every connected MasterHub module (keypad, sliders, knobs, rollers, dial, base) s
 
 ### Buttons
 
-| Module  | Controls                                      | Each cell shows      |
-| ------- | --------------------------------------------- | -------------------- |
-| Keypad  | 15 keys, rows 0–2                             | 72×72 button image   |
-| Sliders | 5 sliders, row 3                              | LED color            |
-| Knobs   | 3 knobs, and the 2 rollers beside them, row 4 | LED color            |
-| Dial    | the dial, row 5                               | 240×240 button image |
-| Base    | 1 cell, row 5                                 | LED color            |
+| Module  | Controls                          | Each cell shows      |
+| ------- | --------------------------------- | -------------------- |
+| Keypad  | 15 keys, rows 0–2                 | 72×72 button image   |
+| Sliders | 5 sliders, row 3                  | LED color            |
+| Knobs   | 3 knobs, row 4                    | LED color            |
+| Rollers | 2 rollers beside the knobs, row 4 | none                 |
+| Dial    | the dial, row 5                   | 240×240 button image |
+| Base    | 1 cell, row 5                     | LED color            |
 
 - The rollers does not work on mac.
 - The grid is fixed, so a missing module leaves a gap instead of moving the modules around it. The surface remembers buttons by grid position: an empty cell is still where its button lives when the module comes back.

@@ -14,12 +14,13 @@ The plugin opens the MasterHub HID devices itself. Every connected module (keypa
 | Keypad         | M4315  | `key/0` … `key/14`                                      | 72×72 JPEG per key |
 | Slider (fader) | M005S  | `slider/0` … `slider/4`                                 | LED color          |
 | Knob           | M003K  | `knob/0` … `knob/2`                                     | LED color          |
-| Roller         | M032LE | `roller/0`, `roller/1` (`roller/0` is the right roller) | LED color          |
+| Roller         | M032LE | `roller/0`, `roller/1` (`roller/0` is the right roller) | none               |
 | Dial           | 1xDial | `dial` (press and rotate)                               | 240×240 JPEG       |
 | Base           | M0064  | `base`                                                  | LED color          |
 
 - **Keys and dial** show button images. Companion draws the dial at 240×240.
-- **Knobs, sliders, rollers, and base** are encoder-style controls without a screen. A button placed on that cell supplies its color as a solid LED color. LED _animations_ (breathing, strobe, rainbow, …) are not supported.
+- **Knobs, sliders, and base** are encoder-style controls without a screen. A button placed on that cell supplies its color as a solid LED color. LED _animations_ (breathing, strobe, rainbow, …) are not supported.
+- **Rollers** are encoder controls with no screen and no LED. A button on that cell does not set a color.
 - **Brightness** in Companion's surface settings drives the keypad backlight and the knob, slider, and base LEDs together.
 - **Sliders** also publish `slider_1` … `slider_5` to Companion as values from 0 to 100. Slider movement is sent as encoder turns; the first reading after connecting only stores the position, so connecting does not turn the encoder.
 - **Pincode entry** on a locked Companion uses the first ten keys of the keypad as digits 0–9. While locked, keys and dial are blanked.
