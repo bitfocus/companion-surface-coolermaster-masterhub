@@ -1,4 +1,5 @@
 import { count, now, time } from './debug.js'
+import { logger } from './log.js'
 import type { DaemonEvent } from './input.js'
 
 import type { HidIdentity } from './discover.js'
@@ -45,6 +46,10 @@ interface OpenModule {
 
 async function delay(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function describeError(error: unknown): string {
+	return error instanceof Error ? error.message : String(error)
 }
 
 function chunkCount(jpeg: Uint8Array): number {
@@ -241,9 +246,7 @@ export class UsbLink {
 					if (this.stopping) {
 						break
 					}
-					console.log(
-						`[MasterHub] pid ${module.productId}: write failed: ${error instanceof Error ? error.message : String(error)}`,
-					)
+					logger.error(`pid ${module.productId}: write failed: ${describeError(error)}`)
 					await this.retirePort(module, port)
 					continue
 				}
@@ -252,9 +255,7 @@ export class UsbLink {
 			}
 		} catch (error) {
 			if (!this.stopping) {
-				console.log(
-					`[MasterHub] pid ${module.productId}: write loop failed: ${error instanceof Error ? error.message : String(error)}`,
-				)
+				logger.error(`pid ${module.productId}: write loop failed: ${describeError(error)}`)
 				this.fail(error)
 			}
 		}
@@ -456,7 +457,7 @@ export class UsbLink {
 		this.watching = true
 		void this.refreshModules()
 			.catch((error: unknown) => {
-				console.log(`[MasterHub] module refresh failed: ${error instanceof Error ? error.message : String(error)}`)
+				logger.error(`module refresh failed: ${describeError(error)}`)
 			})
 			.finally(() => {
 				this.watching = false
@@ -488,9 +489,7 @@ export class UsbLink {
 					this.repaint(module.productId)
 				} catch (error) {
 					module.port = null
-					console.log(
-						`[MasterHub] pid ${module.productId}: reopen failed: ${error instanceof Error ? error.message : String(error)}`,
-					)
+					logger.error(`pid ${module.productId}: reopen failed: ${describeError(error)}`)
 				}
 			}
 		}

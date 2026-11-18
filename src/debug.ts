@@ -3,6 +3,8 @@
  * Companion's module logger. Its default sink also mirrors to the module process `console`, which
  * is where the surface process output goes.
  */
+import { logger } from './log.js'
+
 const envEnabled = process.env.MASTERHUB_DEBUG === '1'
 let enabled = envEnabled
 let timer: ReturnType<typeof setInterval> | null = null
@@ -52,7 +54,7 @@ export function time(name: string, startedAt: number, budgetMs = 50): void {
 	const ms = performance.now() - startedAt
 	record(name, ms)
 	if (ms > budgetMs) {
-		console.log(`${name} took ${ms.toFixed(1)} ms`)
+		logger.info(`${name} took ${ms.toFixed(1)} ms`)
 	}
 }
 
@@ -97,7 +99,7 @@ function startSummaries(): void {
 			)
 			counters.delete(name)
 		}
-		console.log(parts.join(' | '))
+		logger.info(parts.join(' | '))
 	}, 1000)
 	timer.unref()
 }
