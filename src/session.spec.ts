@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import type { HidIdentity } from './discover.js'
-import { PID_KEYS, PID_KNOB, VID } from './hid/ids.js'
+import { PID_BASE, PID_DIAL, PID_KEYS, PID_KNOB, PID_ROLLER, PID_SLIDER, VID } from './hid/ids.js'
 import { encodeButtonImage, softwareModeFeature } from './hid/keys.js'
 import { encodeLed, LED_KNOB } from './hid/m0.js'
 import type { DaemonEvent } from './input.js'
@@ -134,6 +134,59 @@ void describe('UsbLink output loop', () => {
 
 			port.queueReport()
 			await waitFor('key press event', () => events.length > 0)
+		} finally {
+			await link.close()
+		}
+	})
+
+	void it('wakes a parked write loop when brightness or a key image is queued', { timeout: 5000 }, async () => {
+		const devices = new Devices([identity])
+		const link = new UsbLink(devices.opener(), () => devices.list())
+		link.setHandlers(
+			() => undefined,
+			() => undefined,
+		)
+		await link.open([identity])
+		await link.start()
+		const port = devices.ports[0]
+		assert.ok(port)
+		try {
+			// start() leaves the loop parked on an empty queue. Queuing has to resolve that wait.
+			link.setBrightness(40)
+			await waitFor('backlight', () => port.features.some((report) => report[1] === 0x34 && report[2] === 40))
+			const jpeg = new Uint8Array(700).fill(7)
+			const chunks = encodeButtonImage(3, jpeg).length
+			link.setKeyImage(3, jpeg)
+			await waitFor('parked key image', () => port.writes.length >= chunks, 1000)
+			assert.equal(port.writes.length, chunks)
+		} finally {
+			await link.close()
+		}
+	})
+
+	void it('does not poll the event loop while every write loop is idle', { timeout: 5000 }, async () => {
+		const present = [
+			identity,
+			{ vendorId: VID, productId: PID_KNOB, path: '/dev/fake-knob' },
+			{ vendorId: VID, productId: PID_SLIDER, path: '/dev/fake-slider' },
+			{ vendorId: VID, productId: PID_BASE, path: '/dev/fake-base' },
+			{ vendorId: VID, productId: PID_ROLLER, path: '/dev/fake-roller' },
+			{ vendorId: VID, productId: PID_DIAL, path: '/dev/fake-dial' },
+		]
+		const devices = new Devices(present)
+		const link = new UsbLink(devices.opener(), () => devices.list())
+		link.setHandlers(
+			() => undefined,
+			() => undefined,
+		)
+		await link.open(present)
+		await link.start()
+		try {
+			assert.equal(devices.ports.length, present.length)
+			assert.ok(devices.ports.every((port) => port.starts === 1))
+			// A polling loop would have a setImmediate pending for every module.
+			await new Promise<void>((resolve) => setTimeout(resolve, 50))
+			assert.equal(process.getActiveResourcesInfo().filter((type) => type === 'Immediate').length, 0)
 		} finally {
 			await link.close()
 		}
