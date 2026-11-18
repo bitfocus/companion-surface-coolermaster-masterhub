@@ -38,7 +38,16 @@ export function mapDaemonEvent(
 	const model = stringOf(module?.model)
 	const id = stringOf(module?.id)
 	const control = numberOf(payload?.control)
-	if (!model || !id || control === null) {
+	if (!model || control === null) {
+		return null
+	}
+
+	// The surface emits its own roller events, so only the model is pinned; `rotate` still
+	// drops a control index that has no cell.
+	if (event.action === 'roller_rotated' && model === 'M032LE' && control >= 0 && control <= 1) {
+		return rotate(`roller/${control}`, detent(payload?.direction, 'up', 'down'), controls)
+	}
+	if (!id) {
 		return null
 	}
 
@@ -48,19 +57,14 @@ export function mapDaemonEvent(
 	if (event.action === 'knob_state' && model === 'M003K' && id === 'knobs' && control >= 0 && control <= 2) {
 		return press(`knob/${control}`, payload?.pressed, controls)
 	}
-	if (event.action === 'knob_state' && model === 'M0064' && id === 'base' && control === 0) {
+	if (event.action === 'knob_state' && model === '1xDial' && id === 'dial' && control === 0) {
 		return press('dial', payload?.pressed, controls)
 	}
 	if (event.action === 'knob_rotated' && model === 'M003K' && id === 'knobs' && control >= 0 && control <= 2) {
 		return rotate(`knob/${control}`, detent(payload?.direction, 'cw', 'ccw'), controls)
 	}
-	if (event.action === 'knob_rotated' && model === 'M0064' && id === 'base' && control === 0) {
+	if (event.action === 'knob_rotated' && model === '1xDial' && id === 'dial' && control === 0) {
 		return rotate('dial', detent(payload?.direction, 'cw', 'ccw'), controls)
-	}
-	// The surface emits its own roller events, so only the model is pinned; `rotate` still
-	// drops a control index that has no cell.
-	if (event.action === 'roller_rotated' && model === 'M032LE' && control >= 0 && control <= 1) {
-		return rotate(`roller/${control}`, detent(payload?.direction, 'up', 'down'), controls)
 	}
 	if (event.action === 'slider_moved' && model === 'M005S' && id === 'faders' && control >= 0 && control <= 4) {
 		const value = numberOf(payload?.value)

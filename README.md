@@ -4,8 +4,10 @@ Use a Cooler Master MasterHub as a [Bitfocus Companion](https://bitfocus.io/comp
 
 The plugin opens the MasterHub HID devices itself. Every connected module (keypad, slider, knob, roller, dial, base) appears as a Companion surface as soon as it is plugged in. There is no device to add by IP or serial:
 
-1. Download the `.tgz` file from the [latest GitHub release](https://github.com/bitfocus/companion-surface-coolermaster-masterhub/releases/latest) and install it as a Companion module, then restart Companion.
+1. Install the module from Companion's module manager, or from the [Bitfocus developer portal](https://user.bitfocus.io/).
 2. Plug in the MasterHub modules. A "MasterHub" surface appears in Companion's surfaces settings.
+
+Quit OpenDeck and Cooler Master software first. The module opens the device exclusively, so it cannot connect while another program is using it.
 
 ## Controls
 
@@ -52,8 +54,6 @@ yarn build
 - `yarn lint` and `yarn format` for lint and formatting.
 - `yarn package` builds the plugin into `pkg/` for distribution.
 - Start Companion with `MASTERHUB_DEBUG=1` to log draw, JPEG encoding, and HID flush timings once per second. The lines go to Companion's log file and the module's process output; with debug off, the plugin logs nothing except failures.
-
-Keep OpenDeck closed while using the surface.
 
 See [companion/HELP.md](companion/HELP.md) for the in-Companion help text.
 

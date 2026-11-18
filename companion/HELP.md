@@ -2,6 +2,10 @@
 
 Every connected MasterHub module (keypad, sliders, knobs, rollers, dial, base) shows up as one **MasterHub** surface. There is no device to add by IP or serial: the surface appears when you plug a module in and goes away when you remove all of them.
 
+Quit OpenDeck and Cooler Master software before plugging in. The surface opens the device exclusively, so it cannot connect while another program is using it.
+
+Only one MasterHub is supported. A second copy of the same module is ignored, and a second chassis does not appear as another surface.
+
 ### Buttons
 
 | Module  | Controls                          | Each cell shows      |
@@ -13,7 +17,7 @@ Every connected MasterHub module (keypad, sliders, knobs, rollers, dial, base) s
 | Dial    | the dial, row 5                   | 240×240 button image |
 | Base    | 1 cell, row 5                     | LED color            |
 
-- The rollers does not work on mac.
+- The rollers do not work on macOS.
 - The grid is fixed, so a missing module leaves a gap instead of moving the modules around it. The surface remembers buttons by grid position: an empty cell is still where its button lives when the module comes back.
 - Slider 1 is the leftmost slider in Companion.
 - On knob, slider, and base cells the button style's color is sent to the LED as a solid color. Animated styles (breathing, strobe, rainbow, …) are not shown on these LEDs.
