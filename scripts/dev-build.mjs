@@ -15,7 +15,7 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-// Resolve from the repository, as `pnpm` scripts do, not from `scripts/`. `exports` in both packages
+// Resolve from the repository, as package scripts do, not from `scripts/`. `exports` in both packages
 // hides the two files used here, hence resolving from their main entry points.
 const require = createRequire(join(process.cwd(), 'package.json'))
 const buildScript = join(dirname(require.resolve('@companion-module/tools')), 'scripts/build-surface.js')
@@ -41,7 +41,7 @@ function build() {
 	const outDir = mkdtempSync(join(tmpdir(), 'masterhub-dev-'))
 	try {
 		// The tool reads the module from its cwd and writes `pkg/` there. It is given a copy of the
-		// inputs, node_modules included (pnpm symlinks would dangle): never a part of the tree that
+		// inputs, node_modules included (a partial copy would leave links dangling): never a part of the tree that
 		// the repository's own tooling may be reading at the same time.
 		for (const input of inputs) {
 			cpSync(input, join(outDir, input), { recursive: true })

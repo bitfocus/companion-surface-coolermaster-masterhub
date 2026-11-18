@@ -39,17 +39,17 @@ The controls are fixed when the surface opens. Unplugging a module keeps the sur
 
 ## Development
 
-Requires Node 26 and pnpm.
+Requires Node 26 and Yarn 4 (`packageManager` is `yarn@4.18.1`; Corepack selects it).
 
 ```sh
-pnpm install
-pnpm --filter "companion-surface-masterhub-usb..." build
+yarn install
+yarn build
 ```
 
-- `pnpm run dev` rebuilds `pkg/masterhub-usb` on every change to `src/` (unminified, inline source maps), so Companion's developer modules directory can point at `pkg/masterhub-usb` and no `.tgz` reinstall is needed. Set it once in Companion's advanced settings (developer mode, developer modules path `pkg/masterhub-usb` of this repository); Companion reloads the module when the `main.js` in there changes.
-- `pnpm run test` runs the unit tests.
-- `pnpm run lint` and `pnpm run format` for lint and formatting.
-- `pnpm run package` builds the plugin into `pkg/` for distribution.
+- `yarn dev` rebuilds `pkg/masterhub-usb` on every change to `src/` (unminified, inline source maps), so Companion's developer modules directory can point at `pkg/masterhub-usb` and no `.tgz` reinstall is needed. Set it once in Companion's advanced settings (developer mode, developer modules path `pkg/masterhub-usb` of this repository); Companion reloads the module when the `main.js` in there changes.
+- `yarn test` runs the unit tests.
+- `yarn lint` and `yarn format` for lint and formatting.
+- `yarn package` builds the plugin into `pkg/` for distribution.
 - Start Companion with `MASTERHUB_DEBUG=1` to log draw, JPEG encoding, and HID flush timings once per second. The lines go to Companion's log file and the module's process output; with debug off, the plugin logs nothing except failures.
 
 Keep OpenDeck closed while using the surface.
