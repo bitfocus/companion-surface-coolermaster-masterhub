@@ -30,6 +30,8 @@ export class MasterHubUsbSurface implements SurfaceInstance {
 	private readonly sliders = new SliderMemory()
 	private readonly controlIds: ReadonlySet<string>
 	private readonly encoder = new LatestJpegEncoder()
+	/** Companion reports each entered digit with `locked` still true, and only redraws the digits when the lock starts. */
+	private locked = false
 
 	constructor(surfaceId: string, grid: SurfaceGrid, context: SurfaceContext, link: UsbLink, onClose: () => void) {
 		this.surfaceId = surfaceId
@@ -118,6 +120,10 @@ export class MasterHubUsbSurface implements SurfaceInstance {
 	}
 
 	showLockedStatus(locked: boolean, _characterCount: number): void {
+		if (locked === this.locked) {
+			return
+		}
+		this.locked = locked
 		if (locked) {
 			void this.blank()
 		}

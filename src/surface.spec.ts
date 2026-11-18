@@ -46,12 +46,17 @@ void describe('MasterHub surface', () => {
 
 	void it('blanks when the surface locks and leaves it alone when it unlocks', async () => {
 		const { surface, images, colors } = surfaceWithEveryModule()
-		surface.showLockedStatus(true, 4)
+		surface.showLockedStatus(true, 0)
 		assert.equal(images.length, 16)
 		assert.equal(colors.length, 9)
 		const afterLock = { images: images.length, colors: colors.length }
+		surface.showLockedStatus(true, 1)
+		assert.deepEqual({ images: images.length, colors: colors.length }, afterLock)
 		surface.showLockedStatus(false, 0)
 		assert.deepEqual({ images: images.length, colors: colors.length }, afterLock)
+		surface.showLockedStatus(true, 0)
+		assert.equal(images.length, afterLock.images * 2)
+		assert.equal(colors.length, afterLock.colors * 2)
 	})
 })
 
